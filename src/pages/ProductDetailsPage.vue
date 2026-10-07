@@ -15,6 +15,9 @@ const PRODUCT_SERVICE_URL = "http://localhost:8000/product";
 
 const product        = ref(null);
 const productLoading = ref(false);
+
+
+
 const productError   = ref(null);
 
 function loadProduct() {
@@ -91,15 +94,12 @@ onMounted(() => {
 <template>
     <div style="padding: 20px;">
 
-        <button @click="router.push('/')">← Back to Search</button>
-
         <br /><br />
 
         <p v-if="productLoading">Loading product...</p>
 
         <div v-if="productError" style="color: red;">
             <p>{{ productError }}</p>
-            <button @click="loadProduct">Retry</button>
         </div>
 
         <div v-if="product">
@@ -124,8 +124,7 @@ onMounted(() => {
                     :key="variant.variantId"
                     :variant="variant"
                     :is-selected="false"
-                    @select="onVariantSelected"
-                />
+                    @select="onVariantSelected"/>
             </div>
 
             <hr />
@@ -135,8 +134,7 @@ onMounted(() => {
             <MerchantComponent
                 v-if="selectedMerchant"
                 :listing="selectedMerchant"
-                :is-selected="true"
-            />
+                :is-selected="true"/>
             <p v-else>Loading seller info...</p>
 
 
