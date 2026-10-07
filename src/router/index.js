@@ -7,7 +7,7 @@ import ProductDetailsPage from "/src/pages/ProductDetailsPage.vue";
 
 const routes = [
     { path: "/", redirect: "/searchPage", component: SearchPage },
-    { path: "/productDetailsPage", component: ProductDetailsPage }
+    { path: "/productDetailsPage/:productId?/:variantId?", component: ProductDetailsPage }
 ];
 
 const router = createRouter({

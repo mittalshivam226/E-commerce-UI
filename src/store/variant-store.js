@@ -30,8 +30,8 @@ export const useVariantStore = defineStore('variantStore', {
         },
 
         fetchVariants(productId) {
-            const GET_ALL_VARIANTS_API_URL = "http://localhost:8000/product/getAllVariants";
-            fetch(`${GET_ALL_VARIANTS_API_URL}&productId=${productId}`)
+            const GET_ALL_VARIANTS_API_URL = "/product/getAllVariantsByProductId";
+            fetch(`${GET_ALL_VARIANTS_API_URL}?productId=${productId}`)
                 .then(response => {
                     if (!response.ok) {
                         throw new Error(`Error in fetching variants: ${response.status}`);

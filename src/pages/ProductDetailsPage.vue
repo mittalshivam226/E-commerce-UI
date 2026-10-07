@@ -11,7 +11,7 @@ import MerchantComponent from "../components/MerchantComponent.vue";
 const route  = useRoute();
 const router = useRouter();
 
-const PRODUCT_SERVICE_URL = "http://localhost:8000/product";
+const PRODUCT_SERVICE_URL = "/product";
 
 const product        = ref(null);
 const productLoading = ref(false);
@@ -21,10 +21,16 @@ const productLoading = ref(false);
 const productError   = ref(null);
 
 function loadProduct() {
+    const productId = route.params.productId;
+    if (!productId) {
+        productError.value = "Product details require a productId in the URL.";
+        return;
+    }
+
     productLoading.value = true;
     productError.value = null;
 
-    fetch(`${PRODUCT_SERVICE_URL}/getProductById?productId=${route.params.productId}`)
+    fetch(`${PRODUCT_SERVICE_URL}/getProductById?productId=${productId}`)
         .then(response => {
             if (!response.ok) throw new Error(`Error: ${response.status}`);
             return response.json();
@@ -68,6 +74,8 @@ const { selectedMerchant, otherMerchants } = storeToRefs(merchantStore);
 onMounted(() => {
 
     loadProduct();
+    if (!route.params.productId) return;
+
     variantStore.fetchVariants(route.params.productId);
 
     const unwatchVariants = watch(variantData, (variants) => {
@@ -77,24 +85,27 @@ onMounted(() => {
         }
     });
 
-    merchantStore.fetchMerchantsByProductAndVariant(route.params.productId, route.params.variantId);
+    if (route.params.variantId) {
+        merchantStore.fetchMerchantsByProductAndVariant(route.params.productId, route.params.variantId);
 
-    const unwatchMerchants = watch(
-        () => merchantStore.merchantData,
-        (listings) => {
-            if (listings.length > 0) {
-                merchantStore.setSelectedMerchant(route.query.merchantId);
-                unwatchMerchants();
+        const unwatchMerchants = watch(
+            () => merchantStore.merchantData,
+            (listings) => {
+                if (listings.length > 0) {
+                    merchantStore.setSelectedMerchant(route.query.merchantId);
+                    unwatchMerchants();
+                }
             }
-        }
-    );
+        );
+    }
 });
 </script>
 
 <template>
     <div style="padding: 20px;">
 
-        <br /><br />
+        <br>
+        <br>
 
         <p v-if="productLoading">Loading product...</p>
 
@@ -104,21 +115,22 @@ onMounted(() => {
 
         <div v-if="product">
 
-            <h1>{{ product.productName }}</h1>
-            <p><strong>Brand:</strong> {{ product.brand }}</p>
-            <p><strong>Category:</strong> {{ product.category }}</p>
-            <p v-if="product.usp"><strong>USP:</strong> {{ product.usp }}</p>
-
-            <hr />
+            
 
             <ImageComponent
                 :img="selectedVariant ? selectedVariant.img : null"
                 :alt-text="product.productName" />
 
-            <br />
+            <br>
+            <h1>{{ product.productName }}</h1>
+            <p><strong>Brand:</strong> {{ product.brand }}</p>
+            <p><strong>Category:</strong> {{ product.category }}</p>
+
+            <hr>
 
             <div v-if="otherVariants.length > 0">
-                <h3>Other Variants</h3>
+                <h3>Other Variants:</h3>
+                <br>
                 <VariantComponent
                     v-for="variant in otherVariants"
                     :key="variant.variantId"
@@ -127,7 +139,10 @@ onMounted(() => {
                     @select="onVariantSelected"/>
             </div>
 
-            <hr />
+            <hr>
+
+            <p v-if="product.usp"><strong>USP:</strong> {{ product.usp }}</p>
+            
 
 
             <h3>Sold By</h3>
@@ -139,15 +154,14 @@ onMounted(() => {
 
 
             <div v-if="otherMerchants.length > 0">
-                <h3>Other Sellers ({{ otherMerchants.length }})</h3>
+                <h3>Other Merchants: ({{ otherMerchants.length }})</h3>
                 <MerchantComponent
                     v-for="listing in otherMerchants"
                     :key="listing.listingId"
-                    :listing="listing"
-                />
+                    :listing="listing"/>
             </div>
 
-            <hr />
+            <hr>
 
             <h3>Product Description</h3>
             <p>{{ product.description }}</p>
