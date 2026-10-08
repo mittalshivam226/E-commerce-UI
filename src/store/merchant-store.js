@@ -24,7 +24,7 @@ export const useMerchantStore = defineStore('merchantStore', {
         },
 
         fetchMerchantsByProductAndVariant(productId, variantId) {
-            const GET_CORRESPONDING_MERCHANTS_API_URL = "/listing/getListingsByProductAndVariant";
+            const GET_CORRESPONDING_MERCHANTS_API_URL = "http://localhost:8080/listing/getListingsByProductAndVariant";
             
             fetch(`${GET_CORRESPONDING_MERCHANTS_API_URL}?productId=${productId}&variantId=${variantId}`)
                 .then(response => {

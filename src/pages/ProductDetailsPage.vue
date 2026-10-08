@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch, onMounted } from "vue";
+import { ref, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useVariantStore } from "../store/variant-store.js";
 import { useMerchantStore } from "../store/merchant-store.js";
@@ -7,156 +7,154 @@ import { storeToRefs } from "pinia";
 import ImageComponent    from "../components/ImageComponent.vue";
 import VariantComponent  from "../components/VariantComponent.vue";
 import MerchantComponent from "../components/MerchantComponent.vue";
+import BuyComponent      from "../components/BuyComponent.vue";
 
 const route  = useRoute();
 const router = useRouter();
 
-const PRODUCT_SERVICE_URL = "/product";
+
+const PRODUCT_SERVICE_URL = "http://localhost:8000/product";
 
 const product        = ref(null);
 const productLoading = ref(false);
-
-
-
 const productError   = ref(null);
 
 function loadProduct() {
-    const productId = route.params.productId;
-    if (!productId) {
-        productError.value = "Product details require a productId in the URL.";
-        return;
-    }
-
     productLoading.value = true;
-    productError.value = null;
+    productError.value   = null;
 
-    fetch(`${PRODUCT_SERVICE_URL}/getProductById?productId=${productId}`)
+    return fetch(`${PRODUCT_SERVICE_URL}/getProductById?productId=${route.params.productId}`)
         .then(response => {
             if (!response.ok) throw new Error(`Error: ${response.status}`);
             return response.json();
         })
         .then(data => {
-            product.value = data;
+            product.value        = data;
             productLoading.value = false;
         })
         .catch(err => {
-            productError.value = err.message;
+            productError.value   = err.message;
             productLoading.value = false;
         });
 }
 
-const variantStore = useVariantStore();
+const variantStore  = useVariantStore();
+const merchantStore = useMerchantStore();
+
 const { variantData, selectedVariant, otherVariants } = storeToRefs(variantStore);
+const { selectedMerchant, otherMerchants }             = storeToRefs(merchantStore);
 
 function onVariantSelected(variant) {
     variantStore.setSelectedVariant(variant);
 
-    merchantStore.fetchMerchantsByProductAndVariant(
-        route.params.productId,
-        variant.variantId
-    );
+    merchantStore.setMerchantData([]);
+    merchantStore.selectedMerchant = null;
+    merchantStore.otherMerchants  = [];
 
-    const unwatch = watch(() => merchantStore.merchantData,
-        (listings) => {
-            if (listings.length > 0) {
-                const sorted = [...listings].sort((a, b) => a.sellingPrice - b.sellingPrice);
-                merchantStore.setSelectedMerchant(sorted[0].merchantId);
-                unwatch();
-            }
-        }
-    );
+    merchantStore
+        .fetchMerchantsByProductAndVariant(route.params.productId, variant.variantId)
+        .then(() => {
+            if (merchantStore.merchantData.length === 0) return;
+            // Auto-select cheapest when user clicks a variant
+            const cheapest = [...merchantStore.merchantData]
+                .sort((a, b) => a.sellingPrice - b.sellingPrice)[0];
+            merchantStore.setSelectedMerchant(cheapest.merchantId);
+        })
+        .catch(err => console.error("Error loading merchants:", err));
 }
 
 
-const merchantStore = useMerchantStore();
-const { selectedMerchant, otherMerchants } = storeToRefs(merchantStore);
+
 
 onMounted(() => {
+    const variantId  = route.params.variantId  || null;
+    const merchantId = route.params.merchantId || null;
 
-    loadProduct();
-    if (!route.params.productId) return;
-
-    variantStore.fetchVariants(route.params.productId);
-
-    const unwatchVariants = watch(variantData, (variants) => {
-        if (variants.length > 0) {
-            variantStore.setSelectedVariantById(route.params.variantId);
-            unwatchVariants();
-        }
-    });
-
-    if (route.params.variantId) {
-        merchantStore.fetchMerchantsByProductAndVariant(route.params.productId, route.params.variantId);
-
-        const unwatchMerchants = watch(
-            () => merchantStore.merchantData,
-            (listings) => {
-                if (listings.length > 0) {
-                    merchantStore.setSelectedMerchant(route.query.merchantId);
-                    unwatchMerchants();
-                }
+    loadProduct()
+        .then(() => variantStore.fetchVariants(route.params.productId))
+        .then(() => {
+            if (variantId) {
+                variantStore.setSelectedVariantById(variantId);
             }
-        );
-    }
+            if (!variantId) return;
+
+            return merchantStore
+                .fetchMerchantsByProductAndVariant(route.params.productId, variantId)
+                .then(() => {
+                    if (merchantStore.merchantData.length === 0) return;
+
+                    if (merchantId) {
+                        merchantStore.setSelectedMerchant(merchantId);
+                    } 
+                    else {
+                        const cheapest = [...merchantStore.merchantData].sort((a, b) => a.sellingPrice - b.sellingPrice)[0];
+                        merchantStore.setSelectedMerchant(cheapest.merchantId);
+                    }
+                });
+        })
+
+        .catch(err => console.error("Error on mount:", err));
 });
 </script>
-
 <template>
-    <div style="padding: 20px;">
+    <div class="product-detail-container">
+
+        <button @click="router.push('/')">Back to Search</button>
 
         <br>
         <br>
-
         <p v-if="productLoading">Loading product...</p>
 
-        <div v-if="productError" style="color: red;">
+        <div v-if="productError" class="error-container">
             <p>{{ productError }}</p>
+            <button @click="loadProduct">Retry</button>
         </div>
 
         <div v-if="product">
-
-            
-
-            <ImageComponent
-                :img="selectedVariant ? selectedVariant.img : null"
-                :alt-text="product.productName" />
-
-            <br>
             <h1>{{ product.productName }}</h1>
             <p><strong>Brand:</strong> {{ product.brand }}</p>
             <p><strong>Category:</strong> {{ product.category }}</p>
-
+            <p v-if="product.usp"><strong>USP:</strong> {{ product.usp }}</p>
             <hr>
 
-            <div v-if="otherVariants.length > 0">
-                <h3>Other Variants:</h3>
-                <br>
+            <ImageComponent
+                :img="selectedVariant ? selectedVariant.img : null"
+                :alt-text="product.productName"/>
+            <br>
+            <div v-if="variantData.length > 0">
+                <h3>Variants</h3>
                 <VariantComponent
-                    v-for="variant in otherVariants"
+                    v-for="variant in variantData"
                     :key="variant.variantId"
                     :variant="variant"
-                    :is-selected="false"
+                    :is-selected="selectedVariant && selectedVariant.variantId === variant.variantId"
                     @select="onVariantSelected"/>
             </div>
 
             <hr>
 
-            <p v-if="product.usp"><strong>USP:</strong> {{ product.usp }}</p>
-            
-
-
             <h3>Sold By</h3>
             <MerchantComponent
-                v-if="selectedMerchant"
-                :listing="selectedMerchant"
-                :is-selected="true"/>
-            <p v-else>Loading seller info...</p>
+                v-if="primaryMerchant"
+                :listing="primaryMerchant"
+                :is-primary="true"/>
+
+            <p v-else-if="selectedVariant">Loading seller info...</p>
+            <p v-else class="no-seller-info">Select a variant to see seller info.</p>
+
+
+
+
+            <BuyComponent v-if="primaryMerchant"
+                :listing="primaryMerchant"
+                :product-id="route.params.productId"
+                :variant-id="selectedVariant ? selectedVariant.variantId : route.params.variantId"/>
 
 
             <div v-if="otherMerchants.length > 0">
-                <h3>Other Merchants: ({{ otherMerchants.length }})</h3>
-                <MerchantComponent
-                    v-for="listing in otherMerchants"
+
+                <h3>Other Sellers ({{ otherMerchants.length }})</h3>
+                <MerchantComponent v-for="listing in otherMerchants"
                     :key="listing.listingId"
                     :listing="listing"/>
             </div>
@@ -184,4 +182,16 @@ onMounted(() => {
     </div>
 </template>
 
-<style scoped></style>
+<style scoped>
+.product-detail-container {
+    padding: 20px;
+}
+
+.error-container {
+    color: red;
+}
+
+.no-seller-info {
+    color: #888;
+}
+</style>
