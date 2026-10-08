@@ -78,15 +78,13 @@ function placeOrder() {
     <div class="order-container">
         <h4>Place Order</h4>
 
-        <div class="form-group">
+        <div class="form">
             <label>Quantity:</label><br />
             <input v-model.number="quantity" type="number" min="1" class="input-quantity"/>
-            <span class="stock-info">
-                ({{ listing.availableStock }} in stock)
-            </span>
+            
         </div>
 
-        <div class="form-group">
+        <div class="form">
             <label>Delivery Address:</label><br />
             <textarea v-model="deliveryAddress" class="textarea-address" placeholder="Enter full delivery address" />
         </div>
@@ -95,8 +93,7 @@ function placeOrder() {
             Total: <strong>Rs. {{ (listing.sellingPrice * quantity).toFixed(2) }}</strong>
         </p>
 
-        <button
-            @click="placeOrder"
+        <button @click="placeOrder"
             :disabled="listing.availableStock === 0 || placing"
             class="btn-submit">
             {{ placing ? "Placing..." : (listing.availableStock === 0 ? "Out of Stock" : "Place Order") }}
@@ -105,13 +102,16 @@ function placeOrder() {
 </template>
 
 <style scoped>
+
 .order-container {
     border: 1px solid #ccc;
     padding: 16px;
     margin-top: 12px;
+
+    border-radius: 4px;
 }
 
-.form-group {
+.form {
     margin-bottom: 8px;
 }
 
@@ -121,11 +121,7 @@ function placeOrder() {
     margin-top: 4px;
 }
 
-.stock-info {
-    margin-left: 8px;
-    color: #555;
-    font-size: 13px;
-}
+
 
 .textarea-address {
     padding: 6px;

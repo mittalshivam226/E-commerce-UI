@@ -13,7 +13,7 @@ defineProps({
 </script>
 
 <template>
-    <div style="border: 1px solid #ccc; padding: 12px; margin: 8px 0;">
+    <div class="merchant">
 
         <p v-if="isSelected"><strong> Sold By</strong></p>
 
@@ -24,4 +24,11 @@ defineProps({
     </div>
 </template>
 
-<style scoped></style>
+<style scoped>
+
+.merchant{
+    border: 1px solid #ccc;
+    padding: 12px; margin: 8px 0;
+    border-radius: 4px;
+}
+</style>
