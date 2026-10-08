@@ -13,7 +13,7 @@ const route  = useRoute();
 const router = useRouter();
 
 
-const PRODUCT_SERVICE_URL = "http://localhost:8000/product";
+const PRODUCT_SERVICE_URL = "http://10.17.48.129:8000/product";
 
 const product        = ref(null);
 const productLoading = ref(false);
@@ -135,9 +135,9 @@ onMounted(() => {
 
             <h3>Sold By</h3>
             <MerchantComponent
-                v-if="primaryMerchant"
-                :listing="primaryMerchant"
-                :is-primary="true"/>
+                v-if="selectedMerchant"
+                :listing="selectedMerchant"
+                :isSelected="true"/>
 
             <p v-else-if="selectedVariant">Loading seller info...</p>
             <p v-else class="no-seller-info">Select a variant to see seller info.</p>
@@ -145,8 +145,8 @@ onMounted(() => {
 
 
 
-            <BuyComponent v-if="primaryMerchant"
-                :listing="primaryMerchant"
+            <BuyComponent v-if="selectedMerchant"
+                :listing="selectedMerchant"
                 :product-id="route.params.productId"
                 :variant-id="selectedVariant ? selectedVariant.variantId : route.params.variantId"/>
 

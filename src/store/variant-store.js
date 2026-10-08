@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 
-const PRODUCT_SERVICE_URL = "http://localhost:8000/product";
+const PRODUCT_SERVICE_URL = "http://10.17.48.129:8000/product";
 
 export const useVariantStore = defineStore('variantStore', {
     state: () => ({
